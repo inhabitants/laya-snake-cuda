@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "laya-snake-cuda"
+version = "0.1.0"
+description = "The Laya Snake demo from laya-mlx on PyTorch (NVIDIA GPU or CPU, Windows and Linux), plus a mode where you disturb the snake and watch it recover."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.10"
+dependencies = [
+    "laya>=0.3.5",
+    "rich>=13",
+    "huggingface_hub>=0.20",
+]
+
+[project.urls]
+Upstream = "https://github.com/mizorewww/laya-mlx"
+Laya = "https://github.com/NandhaKishorM/laya"
+
+[project.scripts]
+laya-snake = "laya_snake.cli:main"
+
+[tool.setuptools]
+packages = ["laya_snake"]

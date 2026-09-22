@@ -1,0 +1,35 @@
+laya-snake-cuda
+Copyright 2026 laya-snake-cuda contributors
+
+This product includes software derived from laya-mlx:
+https://github.com/mizorewww/laya-mlx
+Copyright 2026 laya-mlx contributors. Licensed under Apache-2.0.
+Upstream revision: fc1df62828a3fedf4d8229fdac1cbd85f1cdf337
+
+The Snake rules, the cycle safety planner, the prompts and questions, the policy,
+the terminal UI and the game loop (laya_snake/game.py, policy.py, ui.py, cli.py)
+are derived from laya_mlx/snake at that revision. Each derived file states at its
+top what was changed. laya_snake/i18n.py and the disturb mode are new.
+
+The laya-mlx NOTICE, reproduced:
+
+    laya-mlx
+    Copyright 2026 laya-mlx contributors
+
+    This product includes software derived from Laya:
+    https://github.com/NandhaKishorM/laya
+    Copyright Convai Innovations and Laya contributors. Licensed under Apache-2.0.
+    Upstream source revision: 6a5819129eb220570792e417e49723d697efd76f
+
+    The token sequence construction, question rendering, confidence calculation,
+    presets, email utilities and language router are adapted from Laya.
+    The neural network is reimplemented using Apple's MLX, following Laya's
+    DecisionModel and the ModernBERT architecture in Hugging Face Transformers.
+    Model weights are downloaded separately from Convai Innovations on Hugging Face;
+    they are not included in this repository.
+
+This project runs the model with the `laya` package by Convai Innovations
+(https://github.com/NandhaKishorM/laya, Apache-2.0), installed from PyPI, and does
+not include its code. Model weights (convaiinnovations/laya on Hugging Face,
+Apache-2.0) are downloaded separately by `laya-snake download`; they are not
+included in this repository.

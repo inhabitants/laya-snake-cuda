@@ -1,23 +1,28 @@
 """A fixed-cell terminal composition shared by live display and recorded exports.
 
-Derived from laya_mlx/snake/ui.py (mizorewww/laya-mlx, Apache-2.0). Changed: the engine and
-hardware labels read the real device instead of "MLX · FP16" / Apple silicon, and the
-disturb-mode rows were added (flash, route mode, status, counters, key help), with their
-text from i18n.py.
+Derived from laya_mlx/snake/ui.py (mizorewww/laya-mlx, Apache-2.0). Changed: its own palette
+(near-black, off-white, green, orange and sand, so a recording of this port is never mistaken
+for the original), its own header, the engine and hardware labels read the real device
+instead of "MLX · FP16" / Apple silicon, and the disturb-mode rows were added (flash, route
+mode, status, counters, key help), with their text from i18n.py.
 """
 
 from rich.text import Text
 
 from .i18n import text
 
-BG = "#090f13"
-FG = "#e3f3ef"
-MUTED = "#68868c"
-DIM = "#20353c"
-GREEN = "#62f5b5"
-AMBER = "#ffce73"
-RED = "#ff7c8c"
-CYAN = "#8ad8e9"
+BG = "#0a0a0a"
+FG = "#f5f0e6"
+MUTED = "#8f8676"
+DIM = "#2a2a2a"
+GREEN = "#8ef1a4"
+AMBER = "#ff6933"
+RED = "#ff6933"
+CYAN = "#c4b8a0"
+GRID = "#1c1c1c"
+HEAD = "#f5f0e6"
+BODY_DARK = (0x1d, 0x35, 0x24)  # tail end of the body gradient
+BODY_LIGHT = (0x8e, 0xf1, 0xa4)  # next to the head
 
 DIGITS = {
     "0": ("█▀█", "█ █", "▀▀▀"),
@@ -109,7 +114,7 @@ def compose(game, decision, stats):
     )
     if stats.get("replay") and state == "LIVE":
         state = "RECORDED RUN · 1×"
-    c.put(1, left, "LAYA  /  LOCAL INTELLIGENCE", MUTED)
+    c.put(1, left, "LAYA-SNAKE-CUDA  /  DISTURB MODE", MUTED)
     c.put(1, width - len(state) - 3, state, GREEN if game["alive"] else RED)
     c.put(2, left, "─" * (width - 6), DIM)
     c.put(4, left, "S N A K E", FG)
@@ -119,16 +124,15 @@ def compose(game, decision, stats):
     for y in range(game["height"]):
         c.put(top + 1 + y, left, "│", DIM)
         c.put(top + 1 + y, left + game["width"] * 2 + 1, "│", DIM)
-        c.put(top + 1 + y, left + 1, "· " * game["width"], "#13272e")
+        c.put(top + 1 + y, left + 1, "· " * game["width"], GRID)
     body = game["body"]
     for index, (x, y) in reversed(list(enumerate(body))):
         fraction = 1 - index / max(1, len(body))
         color = (
-            "#dcfff0"
+            HEAD
             if index == 0
-            else (
-                f"#{int(18 + 64 * fraction):02x}{int(73 + 150 * fraction):02x}"
-                f"{int(57 + 102 * fraction):02x}"
+            else "#" + "".join(
+                f"{int(dark + (light - dark) * fraction):02x}" for dark, light in zip(BODY_DARK, BODY_LIGHT)
             )
         )
         c.put(top + y + 1, left + 1 + 2 * x, "██", color)

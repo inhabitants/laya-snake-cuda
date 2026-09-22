@@ -1,9 +1,9 @@
 """Render the same terminal cells from real timestamped runs, at original speed.
 
 Derived from laya_mlx/snake/replay.py (mizorewww/laya-mlx, Apache-2.0). Changed: Windows
-monospace fonts join the font search, the recording is read as UTF-8, the window title names
-this port, and the disturb-mode fields recorded in each frame (status, flash, counters) are
-rendered as they were live. Needs Pillow (`pip install -e .[export]`) and ffmpeg on PATH.
+monospace fonts join the font search, the recording is read as UTF-8, the frame drops the
+macOS window dots and carries this port's title and signature, and the disturb-mode fields
+recorded in each frame (status, flash, counters) are rendered as they were live. Needs Pillow (`pip install -e .[export]`) and ffmpeg on PATH.
 """
 
 import argparse
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .ui import BG, DIM, MUTED, compose
+from .ui import BG, DIM, FG, MUTED, compose
 
 FONTS = (
     "C:/Windows/Fonts/CascadiaMono.ttf",
@@ -62,7 +62,7 @@ class TerminalRaster:
         self.x = (width - columns * self.cw) // 2
         self.y = (height - rows * self.ch) // 2 + 16
         self.cache = {}
-        self.base = Image.new("RGB", (width, height), "#05090c")
+        self.base = Image.new("RGB", (width, height), "#050505")
         draw = ImageDraw.Draw(self.base)
         box = (
             self.x - 22,
@@ -71,17 +71,19 @@ class TerminalRaster:
             self.y + rows * self.ch + 14,
         )
         draw.rounded_rectangle(box, radius=18, fill=BG, outline=DIM, width=2)
-        for index, color in enumerate(("#ed6a67", "#eeb65a", "#5ec486")):
-            x = self.x + index * 22
-            draw.ellipse((x, self.y - 25, x + 11, self.y - 14), fill=color)
         title_font = ImageFont.truetype(str(font_path), max(12, size - 9))
         draw.text(
-            (width // 2, self.y - 24),
-            "laya-snake-cuda  /  real recorded decisions",
+            (self.x, self.y - 24),
+            "laya-snake-cuda  /  real run on an RTX 3070, replayed at 1×",
             font=title_font,
             fill=MUTED,
-            anchor="mt",
+            anchor="lt",
         )
+        # Signature: "Sint" carries the weight, ".fyi" steps back.
+        sign_x, sign_y = box[2] - 22, self.y - 24
+        dot = draw.textlength(".fyi", font=title_font)
+        draw.text((sign_x - dot, sign_y), ".fyi", font=title_font, fill=MUTED, anchor="lt")
+        draw.text((sign_x - dot, sign_y), "Sint", font=title_font, fill=FG, anchor="rt")
 
     def glyph(self, character, color):
         key = character, color

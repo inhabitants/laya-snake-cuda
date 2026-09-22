@@ -4,6 +4,10 @@
 
 O demo da cobrinha do [laya-mlx](https://github.com/mizorewww/laya-mlx), rodando em placa NVIDIA (ou só no processador) com PyTorch, no Windows ou no Linux. E uma coisa que o original não tem: você atrapalha a cobra pelo teclado e vê ela se ajeitar.
 
+![O Laya jogando a cobrinha numa RTX 3070 enquanto é atrapalhado: o painel mostra YOU empurrando, DODGED e depois recovered in 11 moves](docs/demo.gif)
+
+*Uma partida real gravada numa RTX 3070, reproduzida em 1× com `laya-snake export`. Aqui os empurrões vêm do `--chaos`; ao vivo, vêm das suas teclas.*
+
 ## Crédito primeiro
 
 Isto é um port, e a maior parte não é nossa.
@@ -86,6 +90,7 @@ O `laya-snake download` baixa o checkpoint multilíngue (~0,65 GB) em `./models/
 | `--chaos N` | Atrapalhada automática a cada N jogadas, pra teste sem tela |
 | `--headless --steps N` | Roda sem tela e imprime um resumo em JSON |
 | `--record run.jsonl` | Grava cada decisão e o estado do tabuleiro |
+| `laya-snake export run.jsonl --output run.mp4 --gif run.gif` | Reproduz uma gravação em 1× como vídeo e GIF (pede `pip install -e .[export]` e ffmpeg) |
 | `--subfolder` | `multilingual` (padrão), `typed-decisions`, ou `''` pro checkpoint em inglês da raiz |
 
 ## Estado

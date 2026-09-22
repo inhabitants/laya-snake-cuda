@@ -7,8 +7,8 @@ Copyright 2026 laya-mlx contributors. Licensed under Apache-2.0.
 Upstream revision: fc1df62828a3fedf4d8229fdac1cbd85f1cdf337
 
 The Snake rules, the cycle safety planner, the prompts and questions, the policy,
-the terminal UI and the game loop (laya_snake/game.py, policy.py, ui.py, cli.py)
-are derived from laya_mlx/snake at that revision. Each derived file states at its
+the terminal UI, the game loop and the video/GIF exporter (laya_snake/game.py,
+policy.py, ui.py, cli.py, replay.py) are derived from laya_mlx/snake at that revision. Each derived file states at its
 top what was changed. laya_snake/i18n.py and the disturb mode are new.
 
 The laya-mlx NOTICE, reproduced:

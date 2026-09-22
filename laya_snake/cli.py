@@ -3,9 +3,9 @@
 Derived from laya_mlx/snake/cli.py (mizorewww/laya-mlx, Apache-2.0). The game loop, pacing,
 recording format and summary are the upstream ones. Changed: the keyboard reads msvcrt on
 Windows (termios on Linux/macOS, as upstream) and returns key tokens; `--device`,
-`--subfolder` and `--lang` were added; `--optimize` (MLX compile) and the benchmark/export
-subcommands were left out, replaced by `download`; a dead round always restarts (also with
---unassisted); and the disturb mode below.
+`--subfolder` and `--lang` were added; `--optimize` (MLX compile) and the benchmark
+subcommand were left out; `download` is new and `export` (replay.py) stays; a dead round
+always restarts (also with --unassisted); and the disturb mode below.
 
 Keys
   W A S D or arrows   disturb: the snake is pushed that way while you keep pressing (a tap
@@ -449,4 +449,8 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "download":
         return download(argv[1:])
+    if argv and argv[0] == "export":
+        from .replay import main as export
+
+        return export(argv[1:])
     return play(argv)

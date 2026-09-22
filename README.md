@@ -4,6 +4,10 @@
 
 The Snake demo from [laya-mlx](https://github.com/mizorewww/laya-mlx), running on an NVIDIA GPU (or just the CPU) with PyTorch, on Windows or Linux. Plus one thing the original doesn't have: you can disturb the snake with the keyboard and watch it get back on track.
 
+![Laya playing Snake on an RTX 3070 while being disturbed: the panel shows YOU pushing it, DODGED, and then recovered in 11 moves](docs/demo.gif)
+
+*A real recorded run on an RTX 3070, replayed at 1× with `laya-snake export`. The pushes here come from `--chaos`; live, they come from your keys.*
+
 ## Credit first
 
 This is a port, and most of it is not ours.
@@ -86,6 +90,7 @@ laya-snake
 | `--chaos N` | Automatic disturbance every N moves, for headless tests |
 | `--headless --steps N` | Run without a display and print a JSON summary |
 | `--record run.jsonl` | Save every decision and board state |
+| `laya-snake export run.jsonl --output run.mp4 --gif run.gif` | Replay a recording at 1× as video and GIF (needs `pip install -e .[export]` and ffmpeg) |
 | `--subfolder` | `multilingual` (default), `typed-decisions`, or `''` for the English root checkpoint |
 
 ## Status

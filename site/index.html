@@ -339,7 +339,7 @@
         </div>
         <figcaption>
           <span lang="en">A real recorded run on an RTX 3070, replayed at 1×. The pushes here come from <code>--chaos</code>; live, they come from your keys.</span>
-          <span lang="pt">Uma partida real gravada numa RTX 3070, reproduzida em 1×. Aqui os empurrões vêm do <code>--chaos</code>; ao vivo, vêm das suas teclas.</span>
+          <span lang="pt">Uma partida real gravada numa RTX 3070, reproduzida em 1×. Aqui os empurrões vêm do <code>--chaos</code>. Ao vivo, vêm das suas teclas.</span>
         </figcaption>
       </figure>
     </div>
@@ -380,7 +380,7 @@
       </div>
       <ol class="adds reveal">
         <li><div><b lang="en">PyTorch instead of MLX</b><b lang="pt">PyTorch no lugar do MLX</b><span lang="en">CUDA or CPU through Convai's <code>laya</code> package, with Windows keyboard input.</span><span lang="pt">CUDA ou CPU pelo pacote <code>laya</code> da Convai, com leitura de teclado no Windows.</span></div></li>
-        <li><div><b lang="en">Disturb mode</b><b lang="pt">Modo atrapalhar</b><span lang="en">WASD or the arrows push the snake off its path; when you let go, it steers back to the food.</span><span lang="pt">WASD ou as setas empurram a cobra pra fora do caminho; quando você solta, ela volta pra comida.</span></div></li>
+        <li><div><b lang="en">Disturb mode</b><b lang="pt">Modo atrapalhar</b><span lang="en">WASD or the arrows push the snake off its path; when you let go, it steers back to the food.</span><span lang="pt">WASD ou as setas empurram a cobra pra fora do caminho. Quando você solta, ela volta pra comida.</span></div></li>
       </ol>
       <p class="note" style="margin-top:18px">
         <span lang="en">Every derived file says at its top what was changed. The NOTICE carries both upstream notices.</span>
@@ -436,7 +436,7 @@
           <span lang="pt">Você está no caminho. <em>O objetivo fica.</em></span>
         </h2>
         <p class="sub" lang="en">The snake is still after the food; you are just in the way. A push that would kill it is not obeyed, and Laya takes that move instead. When you let go, the panel counts the moves until it eats again.</p>
-        <p class="sub" lang="pt">A cobra continua atrás da comida; você só está no caminho. Empurrão que mataria a cobra não é obedecido, e o Laya faz aquela jogada no lugar. Quando você solta, o painel conta as jogadas até ela comer de novo.</p>
+        <p class="sub" lang="pt">A cobra continua atrás da comida. Você só está no caminho. Empurrão que mataria a cobra não é obedecido, e o Laya faz aquela jogada no lugar. Quando você solta, o painel conta as jogadas até ela comer de novo.</p>
         <div class="states" aria-label="What the panel says">
           <span class="state you">YOU</span>
           <span class="state dodged" lang="en">DODGED</span><span class="state dodged" lang="pt">DESVIOU</span>
@@ -499,7 +499,7 @@
       </div>
       <p class="note">
         <span lang="en">Multilingual checkpoint, 1.5 GB of VRAM at peak. The 3070 also drives the monitor; with another GPU job running at the same time we saw up to ~170 ms.</span>
-        <span lang="pt">Checkpoint multilíngue, 1,5 GB de memória de vídeo no pico. A 3070 também segura o monitor; com outro trabalho na placa ao mesmo tempo vimos até ~170 ms.</span>
+        <span lang="pt">Checkpoint multilíngue, 1,5 GB de memória de vídeo no pico. A 3070 também segura o monitor. Com outro trabalho na placa ao mesmo tempo, vimos até ~170 ms.</span>
       </p>
     </div>
   </section>
@@ -526,7 +526,7 @@
               <tr><td>--unassisted</td><td><span lang="en">Shield off: Laya's top pick, as is</span><span lang="pt">Escudo desligado: a escolha do Laya, crua</span></td></tr>
               <tr><td>--max-speed</td><td><span lang="en">One move per finished inference</span><span lang="pt">Uma jogada por inferência terminada</span></td></tr>
               <tr><td>--chaos N</td><td><span lang="en">Automatic push every N moves</span><span lang="pt">Empurrão automático a cada N jogadas</span></td></tr>
-              <tr><td>--record run.jsonl</td><td><span lang="en">Save every decision; <code>laya-snake export</code> turns it into video</span><span lang="pt">Grava cada decisão; o <code>laya-snake export</code> vira vídeo</span></td></tr>
+              <tr><td>--record run.jsonl</td><td><span lang="en">Save every decision; <code>laya-snake export</code> turns it into video</span><span lang="pt">Grava cada decisão. O <code>laya-snake export</code> vira vídeo</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -559,7 +559,7 @@ laya-snake</pre><button class="copy" type="button"><span lang="en">Copy</span><s
         </ol>
         <p class="hint">
           <span lang="en">No GPU: <code>laya-snake --device cpu --fps 3</code>. On Windows the board needs a terminal of at least 104 × 35; <code>scripts\play-windows.cmd</code> opens Windows Terminal at the right size. RTX 50 series needs cu128 or newer.</span>
-          <span lang="pt">Sem placa: <code>laya-snake --device cpu --fps 3</code>. No Windows o tabuleiro pede um terminal de pelo menos 104 × 35; o <code>scripts\play-windows.cmd</code> abre o Windows Terminal no tamanho certo. RTX série 50 pede cu128 ou mais novo.</span>
+          <span lang="pt">Sem placa: <code>laya-snake --device cpu --fps 3</code>. No Windows o tabuleiro pede um terminal de pelo menos 104 × 35. O <code>scripts\play-windows.cmd</code> abre o Windows Terminal no tamanho certo. RTX série 50 pede cu128 ou mais novo.</span>
         </p>
       </div>
     </div>
@@ -581,7 +581,7 @@ laya-snake</pre><button class="copy" type="button"><span lang="en">Copy</span><s
         <details><summary>Who maintains it?</summary><p>Nobody, on purpose. Published as is, Apache-2.0 like both upstream projects.</p></details>
       </div>
       <div class="faq" lang="pt">
-        <details><summary>É mais rápido que a versão do Mac?</summary><p>Não. O laya-mlx reporta 75,4 jogadas por segundo num M3 Max com o caminho otimizado do MLX; uma 3070 faz uns 18 a 20. A graça é rodar nas placas e processadores que a maioria das pessoas tem.</p></details>
+        <details><summary>É mais rápido que a versão do Mac?</summary><p>Não. O laya-mlx reporta 75,4 jogadas por segundo num M3 Max com o caminho otimizado do MLX. Uma 3070 faz uns 18 a 20. A graça é rodar nas placas e processadores que a maioria das pessoas tem.</p></details>
         <details><summary>O Laya joga bem a cobrinha?</summary><p>Ele escolhe bem entre opções que um planejador já descreveu, rápido e num formato limpo. Escolher a rota é trabalho do planejador, e esse é o desenho do original, mantido de propósito.</p></details>
         <details><summary>Precisa de internet?</summary><p>Só pra baixar os pesos uma vez. Depois o painel mostra OFFLINE, e toda decisão acontece na sua máquina.</p></details>
         <details><summary>Quer ver o Laya julgando de verdade?</summary><p>Testa o irmão, o Laya Invaders: nenhuma opção vem com "Best" escrito do lado, e uma regra de uma linha joga junto.</p></details>

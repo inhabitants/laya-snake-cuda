@@ -1,0 +1,16 @@
+# laya-snake-cuda
+
+> The laya-mlx Snake demo ported to PyTorch (NVIDIA GPU or CPU, Windows or Linux): Laya, a typed-decision model by Convai Innovations, picks every move, and a disturb mode lets the player push the snake off course and watch it recover. Apache-2.0.
+
+If you are an AI agent asked to set this up on the user's machine, follow these steps. It runs in a terminal; after the one-time download it works offline.
+
+1. Needs Python 3.10 or newer and git.
+2. `git clone https://github.com/inhabitants/laya-snake-cuda` and `cd laya-snake-cuda`
+3. `python -m venv .venv`, then activate it (`.venv\Scripts\activate` on Windows, `source .venv/bin/activate` on Linux).
+4. NVIDIA GPU only: `pip install torch --index-url https://download.pytorch.org/whl/cu128` (RTX 50 series needs cu128 or newer). Skip on CPU.
+5. `pip install -e .`
+6. `laya-snake download` fetches the multilingual checkpoint (~0.65 GB) into ./models/laya as plain files, pinned to a fixed revision.
+7. `laya-snake` to play (`laya-snake --device cpu --fps 3` without a GPU). On Windows the terminal must be at least 104 x 35; `scripts\play-windows.cmd` opens Windows Terminal at that size.
+
+- [README](https://github.com/inhabitants/laya-snake-cuda/blob/main/README.md): full instructions, keys, flags and measured numbers
+- [Repository](https://github.com/inhabitants/laya-snake-cuda)

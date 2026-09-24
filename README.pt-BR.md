@@ -1,6 +1,6 @@
 # laya-snake-cuda
 
-[English](README.md) · **Português**
+[English](README.md) · **Português** · [Site](https://www.sapiensinteticos.com/laya-snake-cuda?lang=pt)
 
 O demo da cobrinha do [laya-mlx](https://github.com/mizorewww/laya-mlx), rodando em placa NVIDIA (ou só no processador) com PyTorch, no Windows ou no Linux. E uma coisa que o original não tem: você atrapalha a cobra pelo teclado e vê ela se ajeitar.
 

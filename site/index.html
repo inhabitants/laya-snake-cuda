@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Served at /laya-snake-cuda on two hosts (www.sapiensinteticos.com/laya-snake-cuda proxies the
+     repo's GitHub Pages at inhabitants.github.io/laya-snake-cuda/). The Sapiens host strips the
+     trailing slash, so relative files need a base. Opened as a local file, it keeps relative paths. -->
+<script>if (location.protocol !== 'file:') document.write('<base href="/laya-snake-cuda/">');</script>
+<link rel="canonical" href="https://www.sapiensinteticos.com/laya-snake-cuda">
+<title>laya-snake-cuda: the Laya Snake on NVIDIA or CPU, with a disturb mode</title>
+<meta name="description" content="The laya-mlx Snake demo, off the Mac: Laya picks every move on an NVIDIA GPU or plain CPU with PyTorch, on Windows or Linux. Push the snake with the keyboard and watch it recover. Apache-2.0.">
+<meta property="og:title" content="laya-snake-cuda">
+<meta property="og:description" content="Push the snake. Watch it find its way back. The Laya Snake demo on NVIDIA or CPU, with a disturb mode.">
+<meta property="og:image" content="https://www.sapiensinteticos.com/laya-snake-cuda/media/og.jpg">
+<meta property="og:url" content="https://www.sapiensinteticos.com/laya-snake-cuda">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="alternate" type="text/markdown" href="llms.txt" title="Setup instructions for AI agents">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230a0a0a'/%3E%3Crect x='1' y='5' width='2' height='2' fill='%233b6b48'/%3E%3Crect x='3' y='5' width='2' height='2' fill='%235fae76'/%3E%3Crect x='3' y='3' width='2' height='2' fill='%238ef1a4'/%3E%3Crect x='3' y='1' width='2' height='2' fill='%23f5f0e6'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23ff6933'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#111110; --panel-2:#171614;
+    --fg:#f5f0e6; --fg-2:#d8d1c3; --muted:#8f8676; --dim:#2a2a2a; --line:#22211e;
+    --green:#8ef1a4; --green-2:#5fae76; --green-3:#3b6b48; --orange:#ff6933; --sand:#c4b8a0;
+    --head:'League Spartan', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    --max:1180px;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; scroll-padding-top:80px; }
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:400 19px/1.55 var(--head);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  /* the board's dot grid, faint, behind everything */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(circle, #1a1a18 1.2px, transparent 1.3px) 0 0 / 30px 30px;
+    -webkit-mask-image:linear-gradient(180deg, #000 0%, rgba(0,0,0,.35) 60%, #000 100%);
+            mask-image:linear-gradient(180deg, #000 0%, rgba(0,0,0,.35) 60%, #000 100%);
+  }
+  main, header, footer{ position:relative; z-index:1; }
+  img, video{ max-width:100%; display:block; }
+  a{ color:inherit; }
+  code, kbd, pre{ font-family:var(--mono); }
+  [hidden]{ display:none !important; }
+
+  html[data-lang="en"] [lang="pt"],
+  html[data-lang="pt"] [lang="en"]{ display:none !important; }
+
+  .wrap{ max-width:var(--max); margin:0 auto; padding:0 28px; }
+  /* grid children default to min-width:auto, and one long <pre> would widen the whole column */
+  .hero .wrap > *, .split > *, .steps > li{ min-width:0; }
+  .o{ color:var(--orange); } .g{ color:var(--green); } .m{ color:var(--muted); }
+
+  /* ================================ NAV ================================ */
+  .nav{
+    position:sticky; top:0; z-index:20;
+    background:color-mix(in srgb, var(--bg) 84%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid transparent; transition:border-color .3s;
+  }
+  .nav.scrolled{ border-bottom-color:var(--line); }
+  .nav .wrap{ display:flex; align-items:center; gap:28px; height:64px; }
+  .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; font:500 14px/1 var(--mono); letter-spacing:.06em; color:var(--muted); }
+  .brand svg{ width:22px; height:22px; }
+  .brand b{ color:var(--green); font-weight:600; }
+  .nav-links{ display:flex; gap:24px; margin-left:auto; }
+  .nav-links a{ font:500 13px/1 var(--mono); color:var(--muted); text-decoration:none; letter-spacing:.04em; }
+  .nav-links a:hover{ color:var(--fg); }
+  .lang{ display:flex; border:1px solid var(--dim); border-radius:999px; padding:3px; font:600 12px/1 var(--mono); }
+  .lang button{ border:0; background:none; color:var(--muted); padding:6px 9px; border-radius:999px; cursor:pointer; font:inherit; }
+  .lang button[aria-pressed="true"]{ background:var(--fg); color:var(--bg); }
+  .gh{ font:600 13px/1 var(--mono); text-decoration:none; padding:9px 14px; border-radius:999px; background:var(--fg); color:var(--bg); }
+
+  /* ================================ HERO ================================ */
+  .hero{ padding:64px 0 72px; }
+  .hero .wrap{ display:grid; grid-template-columns:1fr 1.12fr; gap:48px; align-items:center; }
+  .kicker{ font:500 12px/1.4 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green); margin:0 0 18px; }
+  h1{ font:800 clamp(3rem, 6vw, 5.6rem)/.93 var(--head); letter-spacing:-.025em; margin:0 0 26px; }
+  html[data-lang="pt"] h1{ font-size:clamp(2.7rem, 5.2vw, 5rem); }
+  .lede{ font-size:clamp(1.08rem, 1.45vw, 1.3rem); color:var(--fg-2); max-width:36ch; margin:0 0 30px; }
+
+  .worm{ display:block; width:190px; height:auto; margin:0 0 30px; }
+  .worm .food{ animation:blink 1.2s steps(2, jump-none) infinite; }
+  @keyframes blink{ 50%{ opacity:.2; } }
+
+  .cmd{
+    background:var(--panel); border:1px solid var(--dim); border-radius:12px;
+    padding:14px 14px 14px 18px; display:flex; align-items:center; gap:14px; max-width:560px;
+  }
+  .cmd .body{ flex:1; min-width:0; }
+  .cmd-label{ display:block; font:500 11px/1 var(--mono); color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; }
+  .cmd code{ font:500 14px/1.5 var(--mono); color:var(--green); overflow-wrap:anywhere; }
+  .copy{
+    flex:none; border:0; cursor:pointer; border-radius:8px; padding:10px 14px;
+    background:var(--green); color:var(--bg); font:600 13px/1 var(--mono);
+    transition:transform .15s;
+  }
+  .copy:active{ transform:scale(.95); }
+
+  .cta{ display:flex; flex-wrap:wrap; gap:12px; margin:18px 0 14px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:9px; text-decoration:none;
+    font:600 15px/1 var(--mono); padding:14px 20px; border-radius:999px;
+    border:1.5px solid var(--dim); color:var(--fg); background:transparent;
+    transition:border-color .2s, transform .2s;
+  }
+  .btn:hover{ border-color:var(--fg); transform:translateY(-2px); }
+  .btn.solid{ background:var(--green); border-color:var(--green); color:var(--bg); }
+  .btn.solid:hover{ border-color:var(--fg); }
+  .fine{ font:500 13px/1.5 var(--mono); color:var(--muted); margin:0; }
+
+  .screen{ margin:0; }
+  .screen .frame{
+    border:1px solid var(--dim); border-radius:10px; overflow:hidden; background:var(--bg);
+    box-shadow:0 40px 90px -50px rgba(142,241,164,.28), 0 30px 60px -40px #000;
+  }
+  .screen video{ width:100%; height:auto; aspect-ratio:1040/585; background:var(--bg); }
+  .screen figcaption{ font:500 13px/1.5 var(--mono); color:var(--muted); margin-top:14px; max-width:62ch; }
+
+  /* ================================ TICKER ================================ */
+  .ticker{ border-block:1px solid var(--line); background:var(--panel); overflow:hidden; }
+  .ticker .track{ display:flex; width:max-content; animation:scroll 50s linear infinite; }
+  .ticker span{ font:500 13.5px/1 var(--mono); color:var(--fg-2); padding:17px 0; white-space:nowrap; }
+  .ticker span::after{ content:"■"; color:var(--green); font-size:8px; vertical-align:2px; padding:0 22px; }
+  @keyframes scroll{ to{ transform:translateX(-50%); } }
+
+  /* ================================ SECTIONS ================================ */
+  section{ padding:120px 0; }
+  h2{ font:800 clamp(2.3rem, 4.6vw, 4rem)/.98 var(--head); letter-spacing:-.02em; margin:0 0 22px; max-width:18ch; }
+  h2 em{ font-style:normal; color:var(--green); }
+  .sub{ color:var(--fg-2); max-width:58ch; margin:0 0 16px; font-size:1.08rem; }
+  .reveal{ opacity:0; transform:translateY(24px); transition:opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
+  .reveal.in{ opacity:1; transform:none; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:start; }
+
+  /* --- credit --- */
+  .credits{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:48px; }
+  .credit{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:26px 24px; }
+  .credit .tag{ font:500 11.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 14px; }
+  .credit h3{ font:700 26px/1.08 var(--head); margin:0 0 10px; }
+  .credit h3 a{ text-decoration:none; border-bottom:1.5px solid var(--dim); }
+  .credit h3 a:hover{ border-color:var(--fg); }
+  .credit p{ margin:0; color:var(--fg-2); font-size:16.5px; line-height:1.5; }
+  .credit .lic{ display:inline-block; margin-top:14px; font:500 12px/1 var(--mono); color:var(--sand); border:1px solid var(--dim); border-radius:999px; padding:6px 10px; }
+  .adds{ list-style:none; margin:46px 0 0; padding:0; display:grid; gap:0; counter-reset:ad; max-width:900px; }
+  .adds li{ counter-increment:ad; display:grid; grid-template-columns:64px 1fr; gap:10px; align-items:baseline; padding:22px 0; border-top:1px solid var(--line); }
+  .adds li:last-child{ border-bottom:1px solid var(--line); }
+  .adds li::before{ content:"+0" counter(ad); font:600 15px/1 var(--mono); color:var(--green); }
+  .adds b{ display:block; font:700 clamp(1.3rem, 2.2vw, 1.7rem)/1.15 var(--head); margin-bottom:6px; }
+  .adds span{ color:var(--fg-2); font-size:17px; }
+  .adds .notice{ font:500 13px/1.5 var(--mono); color:var(--muted); }
+
+  /* --- typed decision --- */
+  .typed{
+    background:var(--panel); border:1px solid var(--dim); border-radius:12px; padding:22px 22px 18px;
+    font:500 13.5px/1.6 var(--mono); color:var(--fg-2);
+  }
+  .typed .q{ color:var(--muted); margin-bottom:10px; }
+  .typed ol{ list-style:none; margin:0 0 14px; padding:0; }
+  .typed li{ display:grid; grid-template-columns:62px 1fr 96px 44px; gap:10px; align-items:center; padding:5px 0; color:var(--muted); }
+  .typed li.on{ color:var(--green); }
+  .typed li i{ height:7px; background:var(--dim); position:relative; }
+  .typed li i::after{ content:""; position:absolute; inset:0 auto 0 0; width:var(--p); background:currentColor; }
+  .typed .yn{ border-top:1px solid var(--dim); padding:12px 0 2px; display:grid; gap:4px; }
+  .typed .yn div{ display:flex; justify-content:space-between; gap:12px; }
+  .typed .yn b{ color:var(--fg); font-weight:600; }
+  .typed .foot{ border-top:1px solid var(--dim); margin-top:10px; padding-top:12px; display:flex; flex-wrap:wrap; gap:6px 22px; }
+  .typed .foot b{ color:var(--fg); font-weight:600; }
+  .flag{ font:500 14px/1.6 var(--mono); color:var(--muted); margin:22px 0 0; }
+  .flag code{ color:var(--green); }
+
+  /* --- disturb --- */
+  .states{ display:flex; flex-wrap:wrap; gap:10px; margin:30px 0 0; }
+  .state{ font:600 13px/1 var(--mono); letter-spacing:.06em; padding:9px 12px; border-radius:8px; border:1px solid var(--dim); background:var(--panel); }
+  .state.you{ color:var(--orange); } .state.dodged{ color:var(--orange); border-color:rgba(255,105,51,.4); }
+  .state.rec{ color:var(--fg-2); } .state.ok{ color:var(--green); border-color:rgba(142,241,164,.35); } .state.fell{ color:var(--muted); }
+  .routes{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:34px; }
+  .route{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 20px 18px; }
+  .route b{ display:block; font:600 13px/1 var(--mono); letter-spacing:.08em; margin-bottom:12px; }
+  .route p{ margin:0; color:var(--fg-2); font-size:16px; line-height:1.5; }
+
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+  table{ width:100%; min-width:520px; border-collapse:collapse; font:500 14px/1.4 var(--mono); }
+  caption{ caption-side:top; text-align:left; font:500 12px/1.4 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:18px 22px 6px; }
+  th{ text-align:left; font:600 11px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:12px 22px; border-bottom:1px solid var(--line); }
+  td{ padding:14px 22px; border-bottom:1px solid var(--line); }
+  tr:last-child td{ border-bottom:0; }
+  td.g{ color:var(--green); } td.m{ color:var(--muted); }
+  .keys{ min-width:0; }
+  .keys td{ vertical-align:top; }
+  .keys td:first-child{ width:40%; }
+  kbd{
+    display:inline-block; min-width:1.9em; text-align:center; padding:3px 7px; margin:0 2px 2px 0;
+    font:600 12px/1.3 var(--mono); color:var(--fg); background:var(--bg);
+    border:1px solid var(--dim); border-bottom-width:2px; border-radius:6px;
+  }
+
+  /* --- numbers --- */
+  .speed{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:48px 0 22px; }
+  .rig{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:26px 26px 24px; }
+  .rig .who{ font:500 12px/1.4 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+  .rig .num{ font:800 clamp(3.6rem, 7vw, 5.6rem)/.9 var(--head); letter-spacing:-.04em; margin:18px 0 8px; }
+  .rig .num small{ font:600 .32em/1 var(--mono); letter-spacing:0; color:var(--muted); margin-left:.2em; }
+  .rig.here .num{ color:var(--green); }
+  .rig.ref{ border-style:dashed; }
+  .rig .of{ font:500 14px/1.5 var(--mono); color:var(--fg-2); }
+  .note{ font:500 14px/1.6 var(--mono); color:var(--muted); margin:0; max-width:74ch; }
+
+  /* --- run --- */
+  .steps{ list-style:none; margin:0; padding:0; display:grid; gap:14px; counter-reset:st; }
+  .steps li{ counter-increment:st; }
+  .steps .lbl{ display:flex; gap:12px; align-items:baseline; font:500 13px/1.4 var(--mono); color:var(--fg-2); margin:0 0 8px; }
+  .steps .lbl::before{ content:"0" counter(st); color:var(--green); font-weight:600; }
+  .code{ position:relative; background:var(--panel); border:1px solid var(--dim); border-radius:10px; }
+  .code pre{ margin:0 78px 0 0; padding:14px 16px; overflow-x:auto; font:500 13.5px/1.6 var(--mono); color:var(--fg); }
+  .code pre .c{ color:var(--muted); }
+  .code .copy{ position:absolute; top:9px; right:9px; padding:8px 11px; font-size:12px; }
+  .hint{ font:500 13.5px/1.6 var(--mono); color:var(--muted); margin:18px 0 0; }
+  .hint code{ color:var(--sand); }
+  .flags td:first-child{ white-space:nowrap; color:var(--green); }
+
+  /* --- faq --- */
+  .faq{ max-width:880px; margin-top:44px; }
+  details{ border-bottom:1px solid var(--line); }
+  summary{
+    cursor:pointer; list-style:none; padding:24px 44px 24px 0; position:relative;
+    font:700 clamp(1.25rem, 2.1vw, 1.6rem)/1.25 var(--head);
+  }
+  summary::-webkit-details-marker{ display:none; }
+  summary::after{ content:"+"; position:absolute; right:4px; top:19px; font:500 30px/1 var(--mono); color:var(--green); transition:transform .25s; }
+  details[open] summary::after{ transform:rotate(45deg); }
+  details p{ margin:-6px 0 24px; color:var(--fg-2); max-width:64ch; }
+
+  /* ================================ FOOTER ================================ */
+  footer{ padding:90px 0 46px; border-top:1px solid var(--line); }
+  .big{ display:flex; align-items:center; flex-wrap:wrap; gap:.25em .4em; font:800 clamp(3.2rem, 10.5vw, 9.6rem)/.86 var(--head); letter-spacing:-.04em; margin:0 0 40px; }
+  .big .slash{ color:var(--dim); font-weight:500; }
+  .big .g{ color:var(--green); }
+  .foot{ display:flex; flex-wrap:wrap; gap:14px 34px; justify-content:space-between; font:500 13px/1.6 var(--mono); color:var(--muted); }
+  .foot a{ color:var(--fg-2); }
+
+  /* ================================ RESPONSIVE ================================ */
+  @media (max-width: 980px){
+    .hero .wrap, .split{ grid-template-columns:1fr; }
+    .speed{ grid-template-columns:1fr 1fr; }
+    .nav-links{ display:none; }
+    .lang{ margin-left:auto; }
+  }
+  @media (max-width: 620px){
+    .wrap{ padding:0 18px; }
+    section{ padding:84px 0; }
+    .hero{ padding:40px 0 56px; }
+    .credits, .routes, .speed{ grid-template-columns:1fr; }
+    .cmd{ flex-direction:column; align-items:stretch; }
+    .cmd .copy{ width:100%; }
+    .gh, .brand-mode{ display:none; }
+    .typed li{ grid-template-columns:52px 1fr 54px 38px; gap:8px; }
+    .adds li{ grid-template-columns:48px 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; animation-delay:0s !important; transition-duration:.01ms !important; transition-delay:0s !important; }
+    .ticker .track{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="laya-snake-cuda">
+      <svg viewBox="0 0 8 8" aria-hidden="true" shape-rendering="crispEdges"><rect x="1" y="5" width="2" height="2" fill="#3b6b48"/><rect x="3" y="5" width="2" height="2" fill="#5fae76"/><rect x="3" y="3" width="2" height="2" fill="#8ef1a4"/><rect x="3" y="1" width="2" height="2" fill="#f5f0e6"/><rect x="6" y="1" width="1" height="1" fill="#ff6933"/></svg>
+      <span>LAYA-SNAKE-CUDA<span class="brand-mode">&nbsp;&nbsp;/&nbsp;&nbsp;<b>DISTURB</b></span></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#credit"><span lang="en">Credit</span><span lang="pt">Crédito</span></a>
+      <a href="#disturb"><span lang="en">Disturb mode</span><span lang="pt">Modo atrapalhar</span></a>
+      <a href="#numbers"><span lang="en">Numbers</span><span lang="pt">Números</span></a>
+      <a href="#run"><span lang="en">Install</span><span lang="pt">Instalar</span></a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-set-lang="pt" aria-pressed="false">PT</button>
+    </div>
+    <a class="gh" href="https://github.com/inhabitants/laya-snake-cuda">GitHub</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ================================ HERO ================================ -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <svg class="worm" viewBox="0 0 19 5" aria-hidden="true" shape-rendering="crispEdges">
+          <rect x="0" y="4" width="1" height="1" fill="#2a4a33"/><rect x="1" y="4" width="1" height="1" fill="#335c3f"/><rect x="2" y="4" width="1" height="1" fill="#3b6b48"/><rect x="3" y="4" width="1" height="1" fill="#447a52"/><rect x="4" y="4" width="1" height="1" fill="#4d8a5d"/><rect x="5" y="4" width="1" height="1" fill="#569a69"/><rect x="6" y="4" width="1" height="1" fill="#5fae76"/><rect x="7" y="4" width="1" height="1" fill="#6bbf83"/>
+          <rect x="7" y="3" width="1" height="1" fill="#76cf8f"/><rect x="7" y="2" width="1" height="1" fill="#81df99"/><rect x="8" y="2" width="1" height="1" fill="#8ef1a4"/><rect x="9" y="2" width="1" height="1" fill="#8ef1a4"/><rect x="10" y="2" width="1" height="1" fill="#f5f0e6"/>
+          <rect class="food" x="17" y="2" width="1" height="1" fill="#ff6933"/>
+        </svg>
+        <p class="kicker"><span lang="en">The laya-mlx Snake, off the Mac</span><span lang="pt">A cobrinha do laya-mlx, fora do Mac</span></p>
+        <h1>
+          <span lang="en">Push the snake.<br><span class="g">Watch it find its way back.</span></span>
+          <span lang="pt">Empurra a cobrinha.<br><span class="g">Vê ela achar o caminho de volta.</span></span>
+        </h1>
+        <p class="lede">
+          <span lang="en">Laya, a small decision model, picks every move on an NVIDIA card or plain CPU, on Windows or Linux. Plus one thing the original doesn't have: you get in the way with the keyboard.</span>
+          <span lang="pt">O Laya, um modelo de decisão pequeno, escolhe cada jogada numa placa NVIDIA ou só no processador, no Windows ou no Linux. E uma coisa que o original não tem: você atrapalha pelo teclado.</span>
+        </p>
+
+        <div class="cmd">
+          <div class="body">
+            <span class="cmd-label"><span lang="en">Paste this into your agent</span><span lang="pt">Cola isso no seu agente</span></span>
+            <code lang="en">Use sapiensinteticos.com/laya-snake-cuda to set up the Laya snake on my machine.</code>
+            <code lang="pt">Usa sapiensinteticos.com/laya-snake-cuda pra instalar a cobrinha do Laya na minha máquina.</code>
+          </div>
+          <button class="copy" type="button"><span lang="en">Copy</span><span lang="pt">Copiar</span></button>
+        </div>
+
+        <div class="cta">
+          <a class="btn solid" href="#run"><span lang="en">Run it yourself</span><span lang="pt">Rodar na sua máquina</span></a>
+          <a class="btn" href="https://github.com/inhabitants/laya-snake-cuda"><span lang="en">View on GitHub</span><span lang="pt">Ver no GitHub</span></a>
+        </div>
+        <p class="fine">
+          <span lang="en">Free. Apache-2.0. NVIDIA card or plain CPU.</span>
+          <span lang="pt">Grátis. Apache-2.0. Placa NVIDIA ou só o processador.</span>
+        </p>
+      </div>
+
+      <figure class="screen">
+        <div class="frame">
+          <video class="lazy" muted loop playsinline preload="none" poster="media/demo.jpg" width="1040" height="585" aria-label="Laya playing Snake on an RTX 3070 while being pushed off course, then recovering">
+            <source data-src="media/demo.mp4" type="video/mp4">
+          </video>
+        </div>
+        <figcaption>
+          <span lang="en">A real recorded run on an RTX 3070, replayed at 1×. The pushes here come from <code>--chaos</code>; live, they come from your keys.</span>
+          <span lang="pt">Uma partida real gravada numa RTX 3070, reproduzida em 1×. Aqui os empurrões vêm do <code>--chaos</code>; ao vivo, vêm das suas teclas.</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="track">
+      <span lang="en">~50 ms per move on an RTX 3070</span><span lang="en">Zero output tokens</span><span lang="en">Three typed questions per move</span><span lang="en">Runs offline</span><span lang="en">Windows and Linux</span><span lang="en">CPU works too</span>
+      <span lang="en">~50 ms per move on an RTX 3070</span><span lang="en">Zero output tokens</span><span lang="en">Three typed questions per move</span><span lang="en">Runs offline</span><span lang="en">Windows and Linux</span><span lang="en">CPU works too</span>
+      <span lang="pt">~50 ms por jogada numa RTX 3070</span><span lang="pt">Zero token de saída</span><span lang="pt">Três perguntas tipadas por jogada</span><span lang="pt">Roda offline</span><span lang="pt">Windows e Linux</span><span lang="pt">Na CPU também</span>
+      <span lang="pt">~50 ms por jogada numa RTX 3070</span><span lang="pt">Zero token de saída</span><span lang="pt">Três perguntas tipadas por jogada</span><span lang="pt">Roda offline</span><span lang="pt">Windows e Linux</span><span lang="pt">Na CPU também</span>
+    </div>
+  </div>
+
+  <!-- ================================ CREDIT ================================ -->
+  <section id="credit">
+    <div class="wrap">
+      <p class="kicker"><span lang="en">Credit first</span><span lang="pt">Crédito primeiro</span></p>
+      <h2>
+        <span lang="en">This is a port. <em>Most of it isn't ours.</em></span>
+        <span lang="pt">Isto é um port. <em>A maior parte não é nossa.</em></span>
+      </h2>
+      <div class="credits">
+        <div class="credit reveal">
+          <p class="tag"><span lang="en">The demo</span><span lang="pt">O demo</span></p>
+          <h3><a href="https://github.com/mizorewww/laya-mlx">mizorewww/laya-mlx</a></h3>
+          <p lang="en">Game rules, safety planner, prompts, terminal UI and game loop. Runs on Apple Silicon with MLX.</p>
+          <p lang="pt">Regras do jogo, planejador de segurança, prompts, tela do terminal e laço do jogo. Roda em Apple Silicon com MLX.</p>
+          <span class="lic">Apache-2.0</span>
+        </div>
+        <div class="credit reveal">
+          <p class="tag"><span lang="en">The model</span><span lang="pt">O modelo</span></p>
+          <h3><a href="https://github.com/NandhaKishorM/laya">Laya</a>, Convai Innovations</h3>
+          <p lang="en">The model and its runtime. The weights come from Hugging Face on first run and are not included here.</p>
+          <p lang="pt">O modelo e o runtime. Os pesos vêm do Hugging Face na primeira execução e não estão incluídos aqui.</p>
+          <span class="lic">Apache-2.0</span>
+        </div>
+      </div>
+      <ol class="adds reveal">
+        <li><div><b lang="en">PyTorch instead of MLX</b><b lang="pt">PyTorch no lugar do MLX</b><span lang="en">CUDA or CPU through Convai's <code>laya</code> package, with Windows keyboard input.</span><span lang="pt">CUDA ou CPU pelo pacote <code>laya</code> da Convai, com leitura de teclado no Windows.</span></div></li>
+        <li><div><b lang="en">Disturb mode</b><b lang="pt">Modo atrapalhar</b><span lang="en">WASD or the arrows push the snake off its path; when you let go, it steers back to the food.</span><span lang="pt">WASD ou as setas empurram a cobra pra fora do caminho; quando você solta, ela volta pra comida.</span></div></li>
+      </ol>
+      <p class="note" style="margin-top:18px">
+        <span lang="en">Every derived file says at its top what was changed. The NOTICE carries both upstream notices.</span>
+        <span lang="pt">Cada arquivo derivado diz no topo o que mudou. O NOTICE carrega os avisos dos dois projetos de origem.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ================================ WHAT LAYA DOES ================================ -->
+  <section id="laya" style="padding-top:20px">
+    <div class="wrap split">
+      <div>
+        <p class="kicker"><span lang="en">What Laya does here</span><span lang="pt">O que o Laya faz aqui</span></p>
+        <h2>
+          <span lang="en">Laya picks. <em>It doesn't plan.</em></span>
+          <span lang="pt">O Laya escolhe. <em>Não planeja.</em></span>
+        </h2>
+        <p class="sub" lang="en">Each move is one forward pass that answers three typed questions at once: which direction, is there a safe route, is the food reachable. It returns probabilities, with zero output tokens.</p>
+        <p class="sub" lang="pt">Cada jogada é uma passada do modelo que responde três perguntas tipadas de uma vez: qual direção, existe rota segura, a comida está alcançável. Ele devolve probabilidades, com zero token de saída.</p>
+        <p class="sub" lang="en">The route itself is not Laya's work. A deterministic planner describes each option in plain words and Laya picks one. So the demo shows how fast and well-formed a typed decision is, not a model that plans on its own.</p>
+        <p class="sub" lang="pt">A rota não é trabalho do Laya. Um planejador determinístico descreve cada opção em palavras e o Laya escolhe uma. Então o demo mostra quão rápida e bem formada é uma decisão tipada, não um modelo que planeja sozinho.</p>
+      </div>
+      <div class="reveal">
+        <div class="typed" aria-label="What one Laya move looks like">
+          <div class="q">Choose the best safe move toward food.</div>
+          <ol>
+            <li class="on"><span>› UP</span><span>Safe. Best route to food.</span><i style="--p:71%"></i><span>0.71</span></li>
+            <li><span>LEFT</span><span>Safe. Slower route.</span><i style="--p:18%"></i><span>0.18</span></li>
+            <li><span>RIGHT</span><span>Unsafe. Traps the snake.</span><i style="--p:8%"></i><span>0.08</span></li>
+            <li><span>DOWN</span><span>Blocked. Collision.</span><i style="--p:3%"></i><span>0.03</span></li>
+          </ol>
+          <div class="yn">
+            <div><span>Is a safe route available?</span><b>0.93</b></div>
+            <div><span>Is food reachable through empty cells?</span><b>0.95</b></div>
+          </div>
+          <div class="foot"><span><b>~50 ms</b></span><span><span lang="en">output tokens</span><span lang="pt">tokens de saída</span> <b>0</b></span><span><span lang="en">network</span><span lang="pt">rede</span> <b class="g">OFFLINE</b></span></div>
+        </div>
+        <p class="flag">
+          <span lang="en">An optional shield only lets safe moves through. <code>--unassisted</code> turns it off, so you see Laya's raw pick.</span>
+          <span lang="pt">Um escudo opcional só deixa passar jogada segura. <code>--unassisted</code> desliga, pra você ver a escolha crua do Laya.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ DISTURB ================================ -->
+  <section id="disturb" style="padding-top:20px">
+    <div class="wrap split">
+      <div>
+        <p class="kicker"><span lang="en">Disturb mode</span><span lang="pt">Modo atrapalhar</span></p>
+        <h2>
+          <span lang="en">You're in the way. <em>The goal stays.</em></span>
+          <span lang="pt">Você está no caminho. <em>O objetivo fica.</em></span>
+        </h2>
+        <p class="sub" lang="en">The snake is still after the food; you are just in the way. A push that would kill it is not obeyed, and Laya takes that move instead. When you let go, the panel counts the moves until it eats again.</p>
+        <p class="sub" lang="pt">A cobra continua atrás da comida; você só está no caminho. Empurrão que mataria a cobra não é obedecido, e o Laya faz aquela jogada no lugar. Quando você solta, o painel conta as jogadas até ela comer de novo.</p>
+        <div class="states" aria-label="What the panel says">
+          <span class="state you">YOU</span>
+          <span class="state dodged" lang="en">DODGED</span><span class="state dodged" lang="pt">DESVIOU</span>
+          <span class="state rec" lang="en">recovering...</span><span class="state rec" lang="pt">se ajeitando...</span>
+          <span class="state ok" lang="en">recovered in 4 moves</span><span class="state ok" lang="pt">se ajeitou em 4 jogadas</span>
+          <span class="state fell" lang="en">fall</span><span class="state fell" lang="pt">caiu</span>
+        </div>
+        <div class="routes">
+          <div class="route reveal">
+            <b class="g" lang="en">FIXED ROUTE</b><b class="g" lang="pt">ROTA FIXA</b>
+            <p lang="en">Upstream, the snake never dies because it rides a route that visits every cell of the board (a Hamiltonian cycle).</p>
+            <p lang="pt">No original, a cobra nunca morre porque segue uma rota que passa por todas as casas do tabuleiro (um ciclo hamiltoniano).</p>
+          </div>
+          <div class="route reveal">
+            <b class="o" lang="en">FREE ROUTE</b><b class="o" lang="pt">ROTA LIVRE</b>
+            <p lang="en">A push breaks that route. Until the body is back in cycle order, a breadth-first planner computes the safe moves on the fly.</p>
+            <p lang="pt">O empurrão quebra essa rota. Até o corpo voltar pra ordem do ciclo, um planejador em largura calcula as jogadas seguras na hora.</p>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap reveal">
+        <table class="keys">
+          <thead><tr><th><span lang="en">Key</span><span lang="pt">Tecla</span></th><th></th></tr></thead>
+          <tbody>
+            <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span lang="en">or arrows</span><span lang="pt">ou setas</span></td><td><span lang="en">Push the snake that way while you keep pressing. A tap lasts about 3 moves.</span><span lang="pt">Empurra a cobra pra aquele lado enquanto você segura. Um toque dura umas 3 jogadas.</span></td></tr>
+            <tr><td><kbd>+</kbd><kbd>-</kbd></td><td><span lang="en">Speed</span><span lang="pt">Velocidade</span></td></tr>
+            <tr><td><kbd>Space</kbd></td><td><span lang="en">Pause</span><span lang="pt">Pausa</span></td></tr>
+            <tr><td><kbd>R</kbd></td><td><span lang="en">New round</span><span lang="pt">Nova rodada</span></td></tr>
+            <tr><td><kbd>Q</kbd></td><td><span lang="en">Quit</span><span lang="pt">Sai</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ NUMBERS ================================ -->
+  <section id="numbers" style="padding-top:20px">
+    <div class="wrap">
+      <p class="kicker"><span lang="en">Numbers we measured</span><span lang="pt">Números que medimos</span></p>
+      <h2>
+        <span lang="en">A 2020 card. <em>~50 ms a move.</em></span>
+        <span lang="pt">Placa de 2020. <em>~50 ms por jogada.</em></span>
+      </h2>
+      <div class="speed reveal">
+        <div class="rig here">
+          <div class="who">RTX 3070 8 GB · CUDA</div>
+          <div class="num">~50<small>ms</small></div>
+          <div class="of"><span lang="en">~18 to 20 moves per second at <code>--max-speed</code></span><span lang="pt">~18 a 20 jogadas por segundo no <code>--max-speed</code></span></div>
+        </div>
+        <div class="rig">
+          <div class="who"><span lang="en">CPU only · Intel i7-11700</span><span lang="pt">Só processador · Intel i7-11700</span></div>
+          <div class="num">~300<small>ms</small></div>
+          <div class="of"><span lang="en">~3 moves per second. Still plays.</span><span lang="pt">~3 jogadas por segundo. Ainda joga.</span></div>
+        </div>
+        <div class="rig ref">
+          <div class="who"><span lang="en">Reference · M3 Max, MLX</span><span lang="pt">Referência · M3 Max, MLX</span></div>
+          <div class="num m">75.4<small>/s</small></div>
+          <div class="of"><span lang="en">moves per second, as reported by laya-mlx</span><span lang="pt">jogadas por segundo, segundo o laya-mlx</span></div>
+        </div>
+      </div>
+      <p class="note">
+        <span lang="en">Multilingual checkpoint, 1.5 GB of VRAM at peak. The 3070 also drives the monitor; with another GPU job running at the same time we saw up to ~170 ms.</span>
+        <span lang="pt">Checkpoint multilíngue, 1,5 GB de memória de vídeo no pico. A 3070 também segura o monitor; com outro trabalho na placa ao mesmo tempo vimos até ~170 ms.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ================================ RUN ================================ -->
+  <section id="run" style="padding-top:20px">
+    <div class="wrap split">
+      <div>
+        <p class="kicker"><span lang="en">Install</span><span lang="pt">Instalar</span></p>
+        <h2>
+          <span lang="en">Four steps. <em>GPU optional.</em></span>
+          <span lang="pt">Quatro passos. <em>Placa opcional.</em></span>
+        </h2>
+        <p class="sub">
+          <span lang="en">Python 3.10 or newer. <code>laya-snake download</code> fetches the checkpoint (~0.65 GB) as plain files, pinned to the revision this port was tested on, because the Hugging Face cache uses symlinks that Windows denies without admin rights.</span>
+          <span lang="pt">Python 3.10 ou mais novo. O <code>laya-snake download</code> baixa o checkpoint (~0,65 GB) como arquivo comum, travado na revisão em que o port foi testado, porque o cache do Hugging Face usa symlink e o Windows nega symlink sem admin.</span>
+        </p>
+        <div class="table-wrap" style="margin-top:30px">
+          <table class="flags keys">
+            <caption><span lang="en">Options</span><span lang="pt">Opções</span></caption>
+            <tbody>
+              <tr><td>--device cpu</td><td><span lang="en">Run on the CPU (or <code>cuda:1</code> for a second card)</span><span lang="pt">Roda na CPU (ou <code>cuda:1</code> pra uma segunda placa)</span></td></tr>
+              <tr><td>--lang pt</td><td><span lang="en">Disturb-mode text in Portuguese</span><span lang="pt">Texto do modo atrapalhar em português</span></td></tr>
+              <tr><td>--unassisted</td><td><span lang="en">Shield off: Laya's top pick, as is</span><span lang="pt">Escudo desligado: a escolha do Laya, crua</span></td></tr>
+              <tr><td>--max-speed</td><td><span lang="en">One move per finished inference</span><span lang="pt">Uma jogada por inferência terminada</span></td></tr>
+              <tr><td>--chaos N</td><td><span lang="en">Automatic push every N moves</span><span lang="pt">Empurrão automático a cada N jogadas</span></td></tr>
+              <tr><td>--record run.jsonl</td><td><span lang="en">Save every decision; <code>laya-snake export</code> turns it into video</span><span lang="pt">Grava cada decisão; o <code>laya-snake export</code> vira vídeo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <ol class="steps">
+          <li>
+            <p class="lbl"><span lang="en">Clone and make a virtual env</span><span lang="pt">Clona e cria o ambiente virtual</span></p>
+            <div class="code"><pre>git clone https://github.com/inhabitants/laya-snake-cuda
+cd laya-snake-cuda
+python -m venv .venv</pre><button class="copy" type="button"><span lang="en">Copy</span><span lang="pt">Copiar</span></button></div>
+          </li>
+          <li>
+            <p class="lbl"><span lang="en">Activate it</span><span lang="pt">Ativa</span></p>
+            <div class="code"><pre><span class="c"># Windows</span>
+.venv\Scripts\activate
+<span class="c"># Linux</span>
+source .venv/bin/activate</pre><button class="copy" type="button"><span lang="en">Copy</span><span lang="pt">Copiar</span></button></div>
+          </li>
+          <li>
+            <p class="lbl"><span lang="en">NVIDIA card: PyTorch with CUDA first (skip on CPU)</span><span lang="pt">Placa NVIDIA: PyTorch com CUDA antes (pula na CPU)</span></p>
+            <div class="code"><pre>pip install torch --index-url https://download.pytorch.org/whl/cu128</pre><button class="copy" type="button"><span lang="en">Copy</span><span lang="pt">Copiar</span></button></div>
+          </li>
+          <li>
+            <p class="lbl"><span lang="en">Install, fetch the model, play</span><span lang="pt">Instala, baixa o modelo, joga</span></p>
+            <div class="code"><pre>pip install -e .
+laya-snake download
+laya-snake</pre><button class="copy" type="button"><span lang="en">Copy</span><span lang="pt">Copiar</span></button></div>
+          </li>
+        </ol>
+        <p class="hint">
+          <span lang="en">No GPU: <code>laya-snake --device cpu --fps 3</code>. On Windows the board needs a terminal of at least 104 × 35; <code>scripts\play-windows.cmd</code> opens Windows Terminal at the right size. RTX 50 series needs cu128 or newer.</span>
+          <span lang="pt">Sem placa: <code>laya-snake --device cpu --fps 3</code>. No Windows o tabuleiro pede um terminal de pelo menos 104 × 35; o <code>scripts\play-windows.cmd</code> abre o Windows Terminal no tamanho certo. RTX série 50 pede cu128 ou mais novo.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ FAQ ================================ -->
+  <section id="faq" style="padding-top:20px">
+    <div class="wrap">
+      <p class="kicker">FAQ</p>
+      <h2>
+        <span lang="en">Before you <em>push.</em></span>
+        <span lang="pt">Antes de <em>empurrar.</em></span>
+      </h2>
+      <div class="faq" lang="en">
+        <details><summary>Is it faster than the Mac version?</summary><p>No. laya-mlx reports 75.4 moves per second on an M3 Max with its optimized MLX path; a 3070 does about 18 to 20. The point is that it runs at all on the cards and CPUs most people have.</p></details>
+        <details><summary>Does Laya play Snake well?</summary><p>It picks well from options a planner already described, fast and in a clean format. Choosing the route is the planner's job, and that's upstream's design, kept on purpose.</p></details>
+        <details><summary>Does it need the internet?</summary><p>Only to download the weights once. After that the panel reads OFFLINE, and every decision happens on your machine.</p></details>
+        <details><summary>Want to see Laya judge for real?</summary><p>Try the sibling, Laya Invaders: no "Best" written next to any option, and a one-line rule playing next to it.</p></details>
+        <details><summary>Who maintains it?</summary><p>Nobody, on purpose. Published as is, Apache-2.0 like both upstream projects.</p></details>
+      </div>
+      <div class="faq" lang="pt">
+        <details><summary>É mais rápido que a versão do Mac?</summary><p>Não. O laya-mlx reporta 75,4 jogadas por segundo num M3 Max com o caminho otimizado do MLX; uma 3070 faz uns 18 a 20. A graça é rodar nas placas e processadores que a maioria das pessoas tem.</p></details>
+        <details><summary>O Laya joga bem a cobrinha?</summary><p>Ele escolhe bem entre opções que um planejador já descreveu, rápido e num formato limpo. Escolher a rota é trabalho do planejador, e esse é o desenho do original, mantido de propósito.</p></details>
+        <details><summary>Precisa de internet?</summary><p>Só pra baixar os pesos uma vez. Depois o painel mostra OFFLINE, e toda decisão acontece na sua máquina.</p></details>
+        <details><summary>Quer ver o Laya julgando de verdade?</summary><p>Testa o irmão, o Laya Invaders: nenhuma opção vem com "Best" escrito do lado, e uma regra de uma linha joga junto.</p></details>
+        <details><summary>Quem mantém?</summary><p>Ninguém, de propósito. Publicado como está, Apache-2.0 como os dois projetos de origem.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="big" aria-label="laya-snake-cuda"><span>LAYA</span><span class="slash">/</span><span class="g">SNAKE</span></p>
+    <div class="foot">
+      <span>
+        <span lang="en">Ported at</span><span lang="pt">Portado no</span>
+        <a href="https://www.sapiensinteticos.com">Sapiens Sintéticos</a> · Apache-2.0
+      </span>
+      <span>
+        <span lang="en">Demo:</span><span lang="pt">Demo:</span>
+        <a href="https://github.com/mizorewww/laya-mlx">mizorewww/laya-mlx</a> ·
+        <span lang="en">Model:</span><span lang="pt">Modelo:</span>
+        <a href="https://github.com/NandhaKishorM/laya">Laya</a>, Convai Innovations
+      </span>
+      <span>
+        <span lang="en">The sibling:</span><span lang="pt">O irmão:</span>
+        <a href="https://www.sapiensinteticos.com/laya-invaders">Laya Invaders</a>
+      </span>
+      <span lang="en">Not affiliated with Convai Innovations or the laya-mlx author.</span>
+      <span lang="pt">Sem vínculo com a Convai Innovations nem com o autor do laya-mlx.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------------------------------------------------------------- language
+  const store = { get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+                  set(k, v){ try { localStorage.setItem(k, v); } catch {} } };
+  const fromUrl = new URLSearchParams(location.search).get('lang');
+  const guess = (navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en';
+  function setLang(lang){
+    root.dataset.lang = lang;
+    root.lang = lang === 'pt' ? 'pt-BR' : 'en';
+    document.querySelectorAll('[data-set-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.setLang === lang)));
+    store.set('sp-lang', lang);
+  }
+  document.querySelectorAll('[data-set-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.setLang)));
+  setLang(fromUrl === 'pt' || fromUrl === 'en' ? fromUrl : (store.get('sp-lang') || guess));
+
+  // ---------------------------------------------------------------- copy buttons
+  document.querySelectorAll('.copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const box = btn.closest('.cmd, .code');
+      const el = box.querySelector(`code[lang="${root.dataset.lang}"]`) || box.querySelector('pre') || box.querySelector('code');
+      const text = el.textContent.trim();
+      try { await navigator.clipboard.writeText(text); } catch {
+        const r = document.createRange(); r.selectNodeContents(el);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges();
+      }
+      const was = btn.innerHTML;
+      btn.innerHTML = '<span lang="en">Copied</span><span lang="pt">Copiado</span>';
+      setTimeout(() => { btn.innerHTML = was; }, 1600);
+    });
+  });
+
+  // ---------------------------------------------------------------- video: load and play only on screen
+  const vio = new IntersectionObserver((entries) => entries.forEach((e) => {
+    const v = e.target;
+    if (e.isIntersecting) {
+      const src = v.querySelector('source[data-src]');
+      if (src) { src.src = src.dataset.src; src.removeAttribute('data-src'); v.load(); }
+      if (reduce) { v.controls = true; return; }
+      v.play().catch(() => { v.controls = true; });
+    } else if (!v.paused) {
+      v.pause();
+    }
+  }), { threshold: .25 });
+  document.querySelectorAll('video.lazy').forEach((v) => vio.observe(v));
+
+  // ---------------------------------------------------------------- reveal
+  const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }), { threshold: .15 });
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+  // In-page links: with the <base> tag, "#run" would point at /laya-snake-cuda/#run and reload.
+  document.querySelectorAll('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
+    const id = a.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+    history.replaceState(null, '', location.pathname + location.search + '#' + id);
+  }));
+
+  const nav = document.getElementById('nav');
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 8), { passive: true });
+})();
+</script>
+</body>
+</html>
